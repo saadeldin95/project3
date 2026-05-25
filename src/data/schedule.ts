@@ -194,29 +194,33 @@ const tasks: Task[] = [
   kaggleLesson(pandas, 6, 45, 'Combining datasets is half the work in any real project.'),
   restPart(2, 'Week 6 rest: open a small CSV of your own and just poke at it. No goal.'),
 
-  kaggleLesson(introML, 1, 30, 'A model is just a function fit to data. Start with that intuition.'),
-  kaggleLesson(introML, 2, 30, 'Exploration before modelling — always.'),
+  {
+    ...kaggleLesson(introML, 1, 60, 'A model is just a function fit to data, and exploration comes before modelling.'),
+    title: 'Intro to Machine Learning — L1+L2: How Models Work + Basic Data Exploration',
+  },
   kaggleLesson(introML, 3, 45, 'Your first model. The fastest way to build instinct is to ship one.'),
   kaggleLesson(introML, 4, 45, 'Validation is what separates research from wishful thinking.'),
   kaggleLesson(introML, 5, 45, 'Underfitting/overfitting is THE central tension of ML.'),
   kaggleLesson(introML, 6, 45, 'Random forests are still a strong baseline in 2026.'),
+  kaggleLesson(introML, 7, 45, 'Kaggle competitions are a great loop for fast feedback.'),
   restPart(2, 'Week 7 rest: read one short ML blog post for fun.'),
 
-  kaggleLesson(introML, 7, 45, 'Kaggle competitions are a great loop for fast feedback.'),
-  kaggleLesson(dataviz, 1, 30, 'Seaborn is opinionated and good — start here, not matplotlib.'),
-  kaggleLesson(dataviz, 2, 30, 'Line charts for trends — the workhorse plot.'),
-  kaggleLesson(dataviz, 3, 30, 'Heatmaps are how you read a correlation matrix.'),
-  kaggleLesson(dataviz, 4, 30, 'Scatter plots reveal relationships your tables hide.'),
+  {
+    ...kaggleLesson(dataviz, 1, 60, 'Seaborn is opinionated and good — start here, not matplotlib.'),
+    title: 'Data Visualization — L1+L2: Hello, Seaborn + Line Charts',
+  },
+  {
+    ...kaggleLesson(dataviz, 3, 60, 'Bar charts, heatmaps, scatter plots — the daily plotting vocabulary.'),
+    title: 'Data Visualization — L3+L4: Bar Charts/Heatmaps + Scatter Plots',
+  },
   {
     ...kaggleLesson(dataviz, 5, 60, 'Distributions tell you what shape your data has.'),
-    title: 'Data Visualization — L5–6: Distributions + Plot Types',
+    title: 'Data Visualization — L5+L6: Distributions + Plot Types',
   },
-  restPart(2, 'Week 8 rest: pick the dataset for next week\'s project.'),
-
   kaggleLesson(dataviz, 7, 60, 'Wraps the data viz mini-arc with a small project.'),
   projectDay('Personal Project: pick & explore dataset', 'Doing > watching. A messy real dataset will teach more than 5 tutorials.'),
-  projectDay('Personal Project: clean + 3 questions', 'Frame questions you actually care about — sports, music, games. Curiosity = retention.'),
-  projectDay('Personal Project: visualise findings + ship notebook', 'A notebook you can show is a milestone. Even rough output beats nothing.'),
+  projectDay('Personal Project: clean, visualise + ship notebook', 'Frame 3 questions you care about, answer them with code, ship a notebook you can show.'),
+  restPart(2, 'Week 8 rest: close the laptop. The project counts as done.'),
 
   ngDay('Andrew Ng C1W1 — Intro & supervised vs unsupervised', 'The cleanest possible mental map of ML. Anchors everything.'),
   ngDay('Andrew Ng C1W1 — Regression model', 'Linear regression is the hello-world of ML.'),
