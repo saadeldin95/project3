@@ -1,28 +1,35 @@
-export type TaskKind = 'video' | 'reading' | 'exercise' | 'review' | 'rest';
+export type LessonKind = 'video' | 'reading' | 'exercise' | 'review' | 'project';
+export type LessonStatus = 'pending' | 'done' | 'skipped' | 'postponed';
 
-export type Task = {
-  day: number;
-  partNumber: 1 | 2 | 3;
-  partTitle: string;
+export type Lesson = {
+  id: string;
+  kind: LessonKind;
+  title: string;
   sourceId: string;
   sourceName: string;
-  title: string;
-  kind: TaskKind;
+  sourceShort: string;
+  partNumber: 1 | 2 | 3;
+  partTitle: string;
   url?: string;
   noLink?: boolean;
-  durationMin?: number;
+  durationMin: number;
+  durationEstimated?: boolean;
   whyItMatters: string;
+  extraNote?: string;
 };
 
-export type Status = 'pending' | 'done' | 'skipped' | 'postponed';
-
-export type DayProgress = {
-  status: Status;
-  completedAt?: string;
+export type LessonRecord = {
+  status: LessonStatus;
+  updatedAt: string;
   note?: string;
 };
 
-export type Progress = {
-  currentDay: number;
-  days: Record<number, DayProgress>;
+export type BudgetMin = 30 | 60 | 120 | 180 | 240;
+
+export type AppState = {
+  version: 2;
+  records: Record<string, LessonRecord>;
+  budgetMin: BudgetMin;
 };
+
+export type ViewKey = 'today' | 'history' | 'notes' | 'progress' | 'settings';

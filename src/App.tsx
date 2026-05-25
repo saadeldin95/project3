@@ -1,61 +1,67 @@
 import { useEffect, useState } from 'react';
 import { Sidebar } from './components/Sidebar';
-import { TodayCard } from './components/TodayCard';
-import { SCHEDULE, TOTAL_DAYS } from './data/schedule';
-import { loadProgress, saveProgress, setDay, advance } from './lib/storage';
-import type { Progress } from './lib/types';
+import { TodayView } from './views/TodayView';
+import { HistoryView } from './views/HistoryView';
+import { NotesView } from './views/NotesView';
+import { ProgressView } from './views/ProgressView';
+import { loadState, saveState, setBudget, setRecord } from './lib/storage';
+import type { AppState, BudgetMin, ViewKey } from './lib/types';
 
 export default function App() {
-  const [progress, setProgress] = useState<Progress>(() => loadProgress());
+  const [state, setState] = useState<AppState>(() => loadState());
+  const [view, setView] = useState<ViewKey>('today');
 
   useEffect(() => {
-    saveProgress(progress);
-  }, [progress]);
+    saveState(state);
+  }, [state]);
 
-  const day = progress.currentDay;
-  const task = SCHEDULE[day - 1];
-  const dayProgress = progress.days[day];
-
-  const onComplete = (note: string | undefined) => {
-    setProgress((p) => {
-      const updated = setDay(p, day, {
+  const onComplete = (id: string, note: string | undefined) => {
+    setState((s) =>
+      setRecord(s, id, {
         status: 'done',
-        completedAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
         note,
-      });
-      return advance(updated, TOTAL_DAYS);
-    });
+      }),
+    );
   };
 
-  const onSkip = () => {
-    setProgress((p) => {
-      const updated = setDay(p, day, {
+  const onSkip = (id: string) => {
+    setState((s) =>
+      setRecord(s, id, {
         status: 'skipped',
-        completedAt: new Date().toISOString(),
-      });
-      return advance(updated, TOTAL_DAYS);
-    });
+        updatedAt: new Date().toISOString(),
+        note: s.records[id]?.note,
+      }),
+    );
   };
 
-  const onPostpone = () => {
-    setProgress((p) => {
-      const updated = setDay(p, day, { status: 'postponed' });
-      return advance(updated, TOTAL_DAYS);
-    });
+  const onPostpone = (id: string) => {
+    setState((s) =>
+      setRecord(s, id, {
+        status: 'postponed',
+        updatedAt: new Date().toISOString(),
+        note: s.records[id]?.note,
+      }),
+    );
+  };
+
+  const onBudgetChange = (b: BudgetMin) => {
+    setState((s) => setBudget(s, b));
   };
 
   return (
     <div className="min-h-screen flex bg-bg text-fg">
-      <Sidebar active="today" />
+      <Sidebar active={view} onNavigate={setView} />
       <main className="flex-1 min-w-0">
-        <TodayCard
-          task={task}
-          totalDays={TOTAL_DAYS}
-          progress={dayProgress}
-          onComplete={onComplete}
-          onPostpone={onPostpone}
-          onSkip={onSkip}
-        />
+        {view === 'today' && (
+          <TodayView
+            state={state}
+            actions={{ onComplete, onSkip, onPostpone, onBudgetChange }}
+          />
+        )}
+        {view === 'history' && <HistoryView state={state} />}
+        {view === 'notes' && <NotesView state={state} />}
+        {view === 'progress' && <ProgressView state={state} />}
       </main>
     </div>
   );
