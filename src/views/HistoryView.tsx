@@ -1,9 +1,16 @@
 import { useMemo, useState } from 'react';
 import type { AppState, LessonRecord, LessonStatus } from '../lib/types';
 import { LESSON_BY_ID } from '../data/lessons';
-import { formatDate } from '../lib/session';
+import { dateKey, formatDayHeader, isTodayEnded } from '../lib/session';
 
 type Entry = { id: string; record: LessonRecord };
+type DayGroup = {
+  date: string;
+  entries: Entry[];
+  doneCount: number;
+  skippedCount: number;
+  postponedCount: number;
+};
 
 const STATUS_LABEL: Record<LessonStatus, string> = {
   pending: '·',
@@ -19,32 +26,56 @@ const STATUS_COLOR: Record<LessonStatus, string> = {
   postponed: 'text-amber-400',
 };
 
-export function HistoryView({ state }: { state: AppState }) {
+export function HistoryView({ state, today }: { state: AppState; today: string }) {
   const [query, setQuery] = useState('');
-  const [expanded, setExpanded] = useState<string | null>(null);
+  const [openDay, setOpenDay] = useState<string | null>(null);
 
-  const entries: Entry[] = useMemo(() => {
-    const out: Entry[] = [];
+  const todayEnded = isTodayEnded(state, today);
+
+  const groups: DayGroup[] = useMemo(() => {
+    const byDay = new Map<string, Entry[]>();
     for (const [id, record] of Object.entries(state.records)) {
       if (record.status === 'pending') continue;
       if (!LESSON_BY_ID[id]) continue;
-      out.push({ id, record });
+      const dk = dateKey(record.updatedAt);
+      if (dk === today && !todayEnded) continue;
+      const arr = byDay.get(dk) ?? [];
+      arr.push({ id, record });
+      byDay.set(dk, arr);
     }
-    out.sort((a, b) => (b.record.updatedAt > a.record.updatedAt ? 1 : -1));
+    const out: DayGroup[] = [];
+    for (const [date, entries] of byDay.entries()) {
+      entries.sort((a, b) => (b.record.updatedAt > a.record.updatedAt ? 1 : -1));
+      let doneCount = 0;
+      let skippedCount = 0;
+      let postponedCount = 0;
+      for (const e of entries) {
+        if (e.record.status === 'done') doneCount += 1;
+        else if (e.record.status === 'skipped') skippedCount += 1;
+        else if (e.record.status === 'postponed') postponedCount += 1;
+      }
+      out.push({ date, entries, doneCount, skippedCount, postponedCount });
+    }
+    out.sort((a, b) => (b.date > a.date ? 1 : -1));
     return out;
-  }, [state.records]);
+  }, [state.records, today, todayEnded]);
 
   const q = query.trim().toLowerCase();
   const filtered = q
-    ? entries.filter((e) => {
-        const lesson = LESSON_BY_ID[e.id];
-        return (
-          lesson.title.toLowerCase().includes(q) ||
-          lesson.sourceShort.toLowerCase().includes(q) ||
-          (e.record.note ?? '').toLowerCase().includes(q)
-        );
-      })
-    : entries;
+    ? groups
+        .map((g) => ({
+          ...g,
+          entries: g.entries.filter((e) => {
+            const lesson = LESSON_BY_ID[e.id];
+            return (
+              lesson.title.toLowerCase().includes(q) ||
+              lesson.sourceShort.toLowerCase().includes(q) ||
+              (e.record.note ?? '').toLowerCase().includes(q)
+            );
+          }),
+        }))
+        .filter((g) => g.entries.length > 0)
+    : groups;
 
   return (
     <div className="max-w-3xl mx-auto px-6 pt-12 pb-24">
@@ -58,57 +89,69 @@ export function HistoryView({ state }: { state: AppState }) {
         className="w-full bg-panel border border-border rounded-md px-3 py-2 text-sm text-fg outline-none focus:border-accent mb-6"
       />
 
-      {entries.length === 0 && (
+      {groups.length === 0 && (
         <div className="rounded-xl border border-border bg-panel p-8 text-center text-sm text-muted">
-          Nothing here yet. Complete or postpone a lesson and it'll show up.
+          Nothing here yet. Finish a session and it'll show up the next day.
         </div>
       )}
 
-      {filtered.length === 0 && entries.length > 0 && (
+      {filtered.length === 0 && groups.length > 0 && (
         <div className="text-sm text-muted">No matches.</div>
       )}
 
-      <ul className="flex flex-col divide-y divide-border border border-border rounded-xl overflow-hidden">
-        {filtered.map(({ id, record }) => {
-          const lesson = LESSON_BY_ID[id];
-          const isOpen = expanded === id;
+      <ul className="flex flex-col gap-3">
+        {filtered.map((g) => {
+          const isOpen = openDay === g.date;
           return (
-            <li key={id} className="bg-panel">
+            <li key={g.date} className="rounded-xl border border-border bg-panel overflow-hidden">
               <button
-                onClick={() => setExpanded(isOpen ? null : id)}
-                className="w-full text-left px-5 py-4 flex items-start gap-4 hover:bg-bg/40"
+                onClick={() => setOpenDay(isOpen ? null : g.date)}
+                className="w-full text-left px-5 py-4 flex items-center justify-between hover:bg-bg/40"
               >
-                <div className="text-xs text-muted w-24 shrink-0 pt-0.5">
-                  {formatDate(record.updatedAt)}
+                <div>
+                  <div className="text-sm text-fg">{formatDayHeader(g.date)}</div>
+                  <div className="text-xs text-muted mt-0.5">
+                    {summary(g)}
+                  </div>
                 </div>
-                <div className="min-w-0 flex-1">
-                  <div className="text-sm text-fg truncate">{lesson.title}</div>
-                  <div className="text-xs text-muted mt-0.5">{lesson.sourceShort}</div>
-                </div>
-                <div className={'text-xs whitespace-nowrap pt-0.5 ' + STATUS_COLOR[record.status]}>
-                  {STATUS_LABEL[record.status]}
-                </div>
+                <div className="text-xs text-muted">{isOpen ? '−' : '+'}</div>
               </button>
               {isOpen && (
-                <div className="px-5 pb-5 pl-32 -mt-2">
-                  {record.note ? (
-                    <p className="text-sm text-fg whitespace-pre-wrap bg-bg border border-border rounded-md px-3 py-2 mb-3">
-                      {record.note}
-                    </p>
-                  ) : (
-                    <p className="text-xs text-muted italic mb-3">No note written.</p>
-                  )}
-                  {lesson.url && !lesson.noLink && (
-                    <a
-                      href={lesson.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center px-3 py-1.5 rounded-md border border-border text-xs hover:border-accent hover:text-accent"
-                    >
-                      Re-open task →
-                    </a>
-                  )}
-                </div>
+                <ul className="border-t border-border divide-y divide-border">
+                  {g.entries.map(({ id, record }) => {
+                    const lesson = LESSON_BY_ID[id];
+                    return (
+                      <li key={id} className="px-5 py-4">
+                        <div className="flex items-start gap-3 mb-2">
+                          <div className="min-w-0 flex-1">
+                            <div className="text-sm text-fg">{lesson.title}</div>
+                            <div className="text-xs text-muted mt-0.5">{lesson.sourceShort}</div>
+                          </div>
+                          <div className={'text-xs whitespace-nowrap pt-0.5 ' + STATUS_COLOR[record.status]}>
+                            {STATUS_LABEL[record.status]}
+                          </div>
+                        </div>
+                        {record.note ? (
+                          <p className="text-sm text-fg whitespace-pre-wrap bg-bg border border-border rounded-md px-3 py-2 mb-2">
+                            {record.note}
+                          </p>
+                        ) : (
+                          <p className="text-xs text-muted italic mb-2">No note written.</p>
+                        )}
+                        {lesson.url && !lesson.noLink && (
+                          <a
+                            href={lesson.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center px-3 py-1.5 rounded-md border border-border text-xs hover:border-accent hover:text-accent"
+                          >
+                            Re-open task →
+                          </a>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
               )}
             </li>
           );
@@ -116,4 +159,12 @@ export function HistoryView({ state }: { state: AppState }) {
       </ul>
     </div>
   );
+}
+
+function summary(g: DayGroup): string {
+  const bits: string[] = [];
+  bits.push(`${g.doneCount} lesson${g.doneCount === 1 ? '' : 's'} completed`);
+  if (g.skippedCount > 0) bits.push(`${g.skippedCount} skipped`);
+  if (g.postponedCount > 0) bits.push(`${g.postponedCount} postponed`);
+  return bits.join(' · ');
 }

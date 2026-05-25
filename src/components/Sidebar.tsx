@@ -7,7 +7,7 @@ const ITEMS: Item[] = [
   { key: 'history', label: 'History' },
   { key: 'notes', label: 'Notes' },
   { key: 'progress', label: 'Progress' },
-  { key: 'settings', label: 'Settings', soon: true },
+  { key: 'settings', label: 'Settings' },
 ];
 
 export function Sidebar({

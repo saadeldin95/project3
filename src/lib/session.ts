@@ -1,4 +1,4 @@
-import type { Lesson, LessonRecord } from './types';
+import type { AppState, Lesson, LessonRecord } from './types';
 
 export function activeQueue(
   queue: Lesson[],
@@ -14,10 +14,7 @@ export function activeQueue(
   return [...pending, ...postponed];
 }
 
-export function computeSession(active: Lesson[], budgetMin: number): Lesson[] {
-  if (active.length === 0) return [];
-  const first = active[0];
-  if (first.durationMin > budgetMin) return [first];
+export function pickSessionLessons(active: Lesson[], budgetMin: number): Lesson[] {
   const out: Lesson[] = [];
   let used = 0;
   for (const l of active) {
@@ -40,8 +37,29 @@ export function formatMinutes(mins: number): string {
   return `${h}h ${m}m`;
 }
 
+export function todayKey(d = new Date()): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${dd}`;
+}
+
+export function dateKey(iso: string): string {
+  return todayKey(new Date(iso));
+}
+
 export function todayDateLabel(d = new Date()): string {
   return d.toLocaleDateString(undefined, {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+  });
+}
+
+export function formatDayHeader(yyyymmdd: string): string {
+  const [y, m, d] = yyyymmdd.split('-').map(Number);
+  const date = new Date(y, m - 1, d);
+  return date.toLocaleDateString(undefined, {
     weekday: 'long',
     month: 'long',
     day: 'numeric',
@@ -59,4 +77,15 @@ export function formatDate(iso: string): string {
   } catch {
     return iso;
   }
+}
+
+export function isTodayEnded(state: AppState, today: string): boolean {
+  const s = state.session;
+  if (!s || s.date !== today) return false;
+  if (s.endedAt) return true;
+  if (s.lessonIds.length === 0) return false;
+  return s.lessonIds.every((id) => {
+    const r = state.records[id];
+    return r?.status === 'done' || r?.status === 'skipped';
+  });
 }

@@ -26,10 +26,17 @@ export type LessonRecord = {
 
 export type BudgetMin = 30 | 60 | 120 | 180 | 240;
 
+export type SessionLock = {
+  date: string;
+  lessonIds: string[];
+  endedAt?: string;
+};
+
 export type AppState = {
   version: 2;
   records: Record<string, LessonRecord>;
   budgetMin: BudgetMin;
+  session: SessionLock | null;
 };
 
 export type ViewKey = 'today' | 'history' | 'notes' | 'progress' | 'settings';
