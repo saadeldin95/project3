@@ -28,6 +28,7 @@ type Actions = {
   onBudgetChange: (b: BudgetMin) => void;
   onLockSession: (date: string, ids: string[]) => void;
   onEndSession: () => void;
+  onStartNext: () => void;
 };
 
 export function TodayView({
@@ -154,7 +155,14 @@ function TodayBody({
       const r = state.records[l.id];
       return r?.status === 'done' || r?.status === 'skipped';
     }).length;
-    return <SessionCompleteState completedCount={doneToday} />;
+    const hasMore = activeForToday.length > 0;
+    return (
+      <SessionCompleteState
+        completedCount={doneToday}
+        canStartNext={hasMore}
+        onStartNext={actions.onStartNext}
+      />
+    );
   }
 
   if (activeForToday.length === 0) {
@@ -233,7 +241,15 @@ function OversizeState({ lesson, budgetMin }: { lesson: Lesson; budgetMin: numbe
   );
 }
 
-function SessionCompleteState({ completedCount }: { completedCount: number }) {
+function SessionCompleteState({
+  completedCount,
+  canStartNext,
+  onStartNext,
+}: {
+  completedCount: number;
+  canStartNext: boolean;
+  onStartNext: () => void;
+}) {
   return (
     <div className="rounded-xl border border-border bg-panel p-8 text-center mt-2">
       <div className="text-2xl mb-2">✓</div>
@@ -243,6 +259,14 @@ function SessionCompleteState({ completedCount }: { completedCount: number }) {
           ? `${completedCount} lesson${completedCount === 1 ? '' : 's'} done today. See you tomorrow.`
           : 'See you tomorrow.'}
       </p>
+      {canStartNext && (
+        <button
+          onClick={onStartNext}
+          className="mt-5 px-4 py-2 rounded-md border border-border text-sm text-muted hover:text-accent hover:border-accent"
+        >
+          Start tomorrow's session early →
+        </button>
+      )}
     </div>
   );
 }

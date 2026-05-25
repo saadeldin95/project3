@@ -6,6 +6,7 @@ import { NotesView } from './views/NotesView';
 import { ProgressView } from './views/ProgressView';
 import { SettingsView } from './views/SettingsView';
 import {
+  clearSession,
   dropFromSession,
   endSession as endSessionInState,
   loadState,
@@ -93,6 +94,10 @@ export default function App() {
     setState((s) => endSessionInState(s));
   }, []);
 
+  const onStartNext = useCallback(() => {
+    setState((s) => clearSession(s));
+  }, []);
+
   const onReset = useCallback(() => {
     setState(resetAll());
   }, []);
@@ -112,6 +117,7 @@ export default function App() {
               onBudgetChange,
               onLockSession,
               onEndSession,
+              onStartNext,
             }}
           />
         )}

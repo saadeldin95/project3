@@ -158,6 +158,10 @@ export function endSession(state: AppState): AppState {
   };
 }
 
+export function clearSession(state: AppState): AppState {
+  return { ...state, session: null };
+}
+
 export function resetAll(): AppState {
   try {
     localStorage.removeItem(V2_KEY);
