@@ -1,0 +1,160 @@
+{
+  "plan_metadata": {
+    "title": "Summer AI Foundation Plan",
+    "duration_weeks": 11,
+    "total_days": 77,
+    "student_level": "Year 1, Semester 2 AI student",
+    "long_term_goal": "Research / Master's / PhD in AI for Science",
+    "philosophy": "Build a rock-solid math + Python foundation. No papers, no advanced ML. Foundation first."
+  },
+  "parts": [
+    {
+      "part_number": 1,
+      "title": "Mathematical Foundation",
+      "weeks": "1-5",
+      "why_it_matters": "Linear algebra and calculus are the language of machine learning. Probability is how ML models reason about uncertainty. Without these three, every ML concept later will feel like magic.",
+      "sources": [
+        {
+          "source_id": "3b1b_linalg",
+          "name": "3Blue1Brown - Essence of Linear Algebra",
+          "type": "youtube_playlist",
+          "playlist_url": "https://www.youtube.com/playlist?list=PLZHQObOWTQDPD3MizzM2xVFitgF8hE_ab",
+          "total_videos": 16,
+          "videos": [
+            { "number": 0, "title": "Preview", "url": "https://www.youtube.com/watch?v=kjBOesZCoqc", "duration_min": 7 },
+            { "number": 1, "title": "Vectors", "url": "https://www.youtube.com/watch?v=fNk_zzaMoSs", "duration_min": 10 },
+            { "number": 2, "title": "Linear combinations, span, and basis vectors", "url": "https://www.youtube.com/watch?v=k7RM-ot2NWY", "duration_min": 10 },
+            { "number": 3, "title": "Linear transformations and matrices", "url": "https://www.youtube.com/watch?v=kYB8IZa5AuE", "duration_min": 11 },
+            { "number": 4, "title": "Matrix multiplication as composition", "url": "https://www.youtube.com/watch?v=XkY2DOUCWMU", "duration_min": 10 },
+            { "number": 5, "title": "Three-dimensional linear transformations", "url": "https://www.youtube.com/watch?v=rHLEWRxRGiM", "duration_min": 4 },
+            { "number": 6, "title": "The determinant", "url": "https://www.youtube.com/watch?v=Ip3X9LOh2dk", "duration_min": 10 },
+            { "number": 7, "title": "Inverse matrices, column space and null space", "url": "https://www.youtube.com/watch?v=uQhTuRlWMxw", "duration_min": 12 },
+            { "number": 8, "title": "Nonsquare matrices as transformations between dimensions", "url": "https://www.youtube.com/watch?v=v8VSDg_WQlA", "duration_min": 4 },
+            { "number": 9, "title": "Dot products and duality", "url": "https://www.youtube.com/watch?v=LyGKycYT2v0", "duration_min": 14 },
+            { "number": 10, "title": "Cross products", "url": "https://www.youtube.com/watch?v=eu6i7WJeinw", "duration_min": 9 },
+            { "number": 11, "title": "Cross products in the light of linear transformations", "url": "https://www.youtube.com/watch?v=BaM7OCEm3G0", "duration_min": 14 },
+            { "number": 12, "title": "Cramer's rule, explained geometrically", "url": "https://www.youtube.com/watch?v=jBsC34PxzoM", "duration_min": 12 },
+            { "number": 13, "title": "Change of basis", "url": "https://www.youtube.com/watch?v=P2LTAUO1TdA", "duration_min": 12 },
+            { "number": 14, "title": "Eigenvectors and eigenvalues", "url": "https://www.youtube.com/watch?v=PFDu9oVAE-g", "duration_min": 17 },
+            { "number": 15, "title": "Abstract vector spaces", "url": "https://www.youtube.com/watch?v=TgKwz5Ikpc8", "duration_min": 16 }
+          ]
+        },
+        {
+          "source_id": "3b1b_calc",
+          "name": "3Blue1Brown - Essence of Calculus",
+          "type": "youtube_playlist",
+          "playlist_url": "https://www.youtube.com/playlist?list=PLZHQObOWTQDMsr9K-rj53DwVRMYO3t5Yr",
+          "total_videos": 12,
+          "videos": [
+            { "number": 1, "title": "The Essence of Calculus", "url": "https://www.youtube.com/watch?v=WUvTyaaNkzM", "duration_min": 17 },
+            { "number": 2, "title": "The paradox of the derivative", "url": "https://www.youtube.com/watch?v=9vKqVkMQHKk", "duration_min": 17 },
+            { "number": 3, "title": "Derivative formulas through geometry", "url": "https://www.youtube.com/watch?v=S0_qX4VJhMQ", "duration_min": 18 },
+            { "number": 4, "title": "Visualizing the chain rule and product rule", "url": "https://www.youtube.com/watch?v=YG15m2VwSjA", "duration_min": 16 },
+            { "number": 5, "title": "What's so special about Euler's number e?", "url": "https://www.youtube.com/watch?v=m2MIpDrF7Es", "duration_min": 14 },
+            { "number": 6, "title": "Implicit differentiation, what's going on here?", "url": "https://www.youtube.com/watch?v=qb40J4N1fa4", "duration_min": 15 },
+            { "number": 7, "title": "Limits, L'Hopital's rule, and epsilon delta definitions", "url": "https://www.youtube.com/watch?v=kfF40MiS7zA", "duration_min": 18 },
+            { "number": 8, "title": "Integration and the fundamental theorem of calculus", "url": "https://www.youtube.com/watch?v=rfG8ce4nNh0", "duration_min": 20 },
+            { "number": 9, "title": "What does area have to do with slope?", "url": "https://www.youtube.com/watch?v=FnJqaIESC2s", "duration_min": 12 },
+            { "number": 10, "title": "Higher order derivatives", "url": "https://www.youtube.com/watch?v=BLkz5LGWihw", "duration_min": 5 },
+            { "number": 11, "title": "Taylor series", "url": "https://www.youtube.com/watch?v=3d6DsjIBzJ4", "duration_min": 22 },
+            { "number": 12, "title": "What they won't teach you in calculus", "url": "https://www.youtube.com/watch?v=CfW845LNObM", "duration_min": 16 }
+          ]
+        },
+        {
+          "source_id": "khan_stats",
+          "name": "Khan Academy - Statistics and Probability",
+          "type": "interactive_course",
+          "main_url": "https://www.khanacademy.org/math/statistics-probability",
+          "note": "Focus only on the first 4 units. No need to finish the whole course.",
+          "units": [
+            { "name": "Analyzing categorical data", "url": "https://www.khanacademy.org/math/statistics-probability/analyzing-categorical-data" },
+            { "name": "Displaying and comparing quantitative data", "url": "https://www.khanacademy.org/math/statistics-probability/displaying-describing-data" },
+            { "name": "Summarizing quantitative data", "url": "https://www.khanacademy.org/math/statistics-probability/summarizing-quantitative-data" },
+            { "name": "Probability", "url": "https://www.khanacademy.org/math/statistics-probability/probability-library" }
+          ]
+        }
+      ]
+    },
+    {
+      "part_number": 2,
+      "title": "Python for Data",
+      "weeks": "6-8",
+      "why_it_matters": "Knowing Python syntax isn't enough. Real ML work means manipulating tabular data, cleaning messy datasets, and visualizing results. Pandas is THE tool for this. By the end of this part you should be able to load any CSV and answer questions about it.",
+      "sources": [
+        {
+          "source_id": "kaggle_pandas",
+          "name": "Kaggle Learn - Pandas",
+          "type": "interactive_course",
+          "main_url": "https://www.kaggle.com/learn/pandas",
+          "estimated_hours": 4,
+          "lessons": [
+            { "number": 1, "title": "Creating, Reading and Writing" },
+            { "number": 2, "title": "Indexing, Selecting & Assigning" },
+            { "number": 3, "title": "Summary Functions and Maps" },
+            { "number": 4, "title": "Grouping and Sorting" },
+            { "number": 5, "title": "Data Types and Missing Values" },
+            { "number": 6, "title": "Renaming and Combining" }
+          ]
+        },
+        {
+          "source_id": "kaggle_intro_ml",
+          "name": "Kaggle Learn - Intro to Machine Learning",
+          "type": "interactive_course",
+          "main_url": "https://www.kaggle.com/learn/intro-to-machine-learning",
+          "estimated_hours": 3,
+          "lessons": [
+            { "number": 1, "title": "How Models Work" },
+            { "number": 2, "title": "Basic Data Exploration" },
+            { "number": 3, "title": "Your First Machine Learning Model" },
+            { "number": 4, "title": "Model Validation" },
+            { "number": 5, "title": "Underfitting and Overfitting" },
+            { "number": 6, "title": "Random Forests" },
+            { "number": 7, "title": "Machine Learning Competitions" }
+          ]
+        },
+        {
+          "source_id": "kaggle_dataviz",
+          "name": "Kaggle Learn - Data Visualization",
+          "type": "interactive_course",
+          "main_url": "https://www.kaggle.com/learn/data-visualization",
+          "estimated_hours": 4,
+          "lessons": [
+            { "number": 1, "title": "Hello, Seaborn" },
+            { "number": 2, "title": "Line Charts" },
+            { "number": 3, "title": "Bar Charts and Heatmaps" },
+            { "number": 4, "title": "Scatter Plots" },
+            { "number": 5, "title": "Distributions" },
+            { "number": 6, "title": "Choosing Plot Types and Custom Styles" },
+            { "number": 7, "title": "Final Project" }
+          ]
+        },
+        {
+          "source_id": "personal_project",
+          "name": "Personal Data Analysis Project",
+          "type": "project",
+          "description": "Pick any dataset that interests you. Use Pandas to load it, clean it, and answer 3 questions about it. Visualize at least 2 findings.",
+          "suggested_dataset_sources": [
+            { "name": "Kaggle Datasets", "url": "https://www.kaggle.com/datasets" },
+            { "name": "Google Dataset Search", "url": "https://datasetsearch.research.google.com/" }
+          ]
+        }
+      ]
+    },
+    {
+      "part_number": 3,
+      "title": "Intro to Machine Learning (Andrew Ng)",
+      "weeks": "9-11",
+      "why_it_matters": "This is the legendary entry point into ML. After Parts 1 and 2, you have the math and Python skills to actually understand what's happening in this course (instead of just memorizing). By the end you'll know how linear regression, logistic regression, and basic neural networks work, AND you'll have implemented them.",
+      "sources": [
+        {
+          "source_id": "andrew_ng_mls",
+          "name": "Machine Learning Specialization (Andrew Ng)",
+          "type": "coursera_course",
+          "no_link_needed": true,
+          "platform": "Coursera",
+          "note": "Find it on Coursera directly. Focus on Course 1 (Supervised Machine Learning: Regression and Classification) this summer."
+        }
+      ]
+    }
+  ]
+}
