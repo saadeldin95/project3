@@ -1,6 +1,13 @@
 export type LessonKind = 'video' | 'reading' | 'exercise' | 'review' | 'project';
 export type LessonStatus = 'pending' | 'done' | 'skipped' | 'postponed';
 
+export type QuizQuestion = {
+  question: string;
+  options: string[];
+  correct: number;
+  explanation: string;
+};
+
 export type Lesson = {
   id: string;
   kind: LessonKind;
@@ -16,6 +23,7 @@ export type Lesson = {
   durationEstimated?: boolean;
   whyItMatters: string;
   extraNote?: string;
+  quiz?: QuizQuestion[];
 };
 
 export type LessonRecord = {

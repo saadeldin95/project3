@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { Lesson, LessonRecord } from '../lib/types';
 import { formatMinutes } from '../lib/session';
+import { QuizModal } from './QuizModal';
 
 const ICON: Record<Lesson['kind'], string> = {
   video: '🎥',
@@ -32,18 +33,18 @@ export function LessonCard({ lesson, record, oversize, onComplete, onSkip, onPos
   const isPostponed = record?.status === 'postponed';
   const [showNote, setShowNote] = useState(false);
   const [note, setNote] = useState(record?.note ?? '');
+  const [showQuiz, setShowQuiz] = useState(false);
 
   const handleComplete = () => {
-    if (lesson.kind === 'project') {
-      setShowNote(true);
-      return;
-    }
     setShowNote(true);
   };
 
   const save = () => {
     onComplete(note.trim() || undefined);
     setShowNote(false);
+    if (lesson.quiz && lesson.quiz.length > 0) {
+      setShowQuiz(true);
+    }
   };
 
   const cancel = () => {
@@ -166,6 +167,14 @@ export function LessonCard({ lesson, record, oversize, onComplete, onSkip, onPos
             </button>
           </div>
         </div>
+      )}
+
+      {showQuiz && lesson.quiz && (
+        <QuizModal
+          questions={lesson.quiz}
+          lessonTitle={lesson.title}
+          onClose={() => setShowQuiz(false)}
+        />
       )}
     </div>
   );
