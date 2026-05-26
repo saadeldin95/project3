@@ -1,15 +1,5 @@
 import type { Lesson } from '../lib/types';
 import curriculum from './curriculum.json';
-import {
-  CA_QUIZ,
-  DATAVIZ_QUIZ,
-  INTROML_QUIZ,
-  KHAN_QUIZ,
-  LA_QUIZ,
-  NG_QUIZ,
-  PANDAS_QUIZ,
-  PROJECT_QUIZ,
-} from './quizzes';
 
 type Raw = typeof curriculum;
 type Source = Raw['parts'][number]['sources'][number];
@@ -137,7 +127,6 @@ const laLesson = (n: number): Lesson => {
     url: v.url,
     durationMin: v.duration_min,
     whyItMatters: LA_WHY[n] ?? 'Builds your linear algebra intuition.',
-    quiz: LA_QUIZ[n],
   };
 };
 
@@ -155,7 +144,6 @@ const caLesson = (n: number): Lesson => {
     url: v.url,
     durationMin: v.duration_min,
     whyItMatters: CA_WHY[n] ?? 'Builds your calculus intuition.',
-    quiz: CA_QUIZ[n],
   };
 };
 
@@ -174,7 +162,6 @@ const khanLesson = (i: number): Lesson => {
     durationMin: 45,
     durationEstimated: true,
     whyItMatters: KHAN_WHY[i] ?? 'Statistics fundamentals for ML.',
-    quiz: KHAN_QUIZ[i],
   };
 };
 
@@ -193,7 +180,6 @@ const pandasLesson = (n: number): Lesson => {
     durationMin: 45,
     durationEstimated: true,
     whyItMatters: PANDAS_WHY[n] ?? 'Pandas fundamentals.',
-    quiz: PANDAS_QUIZ[n],
   };
 };
 
@@ -212,7 +198,6 @@ const introMLLesson = (n: number): Lesson => {
     durationMin: 45,
     durationEstimated: true,
     whyItMatters: INTROML_WHY[n] ?? 'Intro ML fundamentals.',
-    quiz: INTROML_QUIZ[n],
   };
 };
 
@@ -231,7 +216,6 @@ const datavizLesson = (n: number): Lesson => {
     durationMin: 45,
     durationEstimated: true,
     whyItMatters: DATAVIZ_WHY[n] ?? 'Data visualization fundamentals.',
-    quiz: DATAVIZ_QUIZ[n],
   };
 };
 
@@ -250,7 +234,6 @@ const projectLesson = (): Lesson => ({
   whyItMatters:
     'Pick a dataset you care about, ask 3 real questions, ship a notebook. Doing > watching. Paste the link to your notebook in the note when done.',
   extraNote: 'Estimated 4–6 hours total. Spread across a few sessions if needed — just mark complete when the notebook is shipped.',
-  quiz: PROJECT_QUIZ,
 });
 
 const ngWeek = (week: 1 | 2 | 3, suffix: 'lectures' | 'lab' | 'notes', title: string, why: string, mins: number): Lesson => {
@@ -271,7 +254,6 @@ const ngWeek = (week: 1 | 2 | 3, suffix: 'lectures' | 'lab' | 'notes', title: st
     extraNote: suffix === 'lectures'
       ? 'A Coursera "week" runs ~3 hours. If your budget can\'t fit it, do as much as you can and mark complete when the week is fully watched.'
       : undefined,
-    quiz: NG_QUIZ[id],
   };
 };
 
@@ -288,7 +270,6 @@ const ngWrapup = (): Lesson => ({
   durationMin: 60,
   durationEstimated: true,
   whyItMatters: 'Write the 3-page summary of Course 1 you wish you had at the start. This is what makes it stick.',
-  quiz: NG_QUIZ['ng-c1-wrapup'],
 });
 
 const part1Queue: Lesson[] = [
