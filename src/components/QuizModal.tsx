@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import type { QuizQuestion } from '../lib/types';
 
 type Props = {
@@ -16,7 +17,12 @@ export function QuizModal({ questions, lessonTitle, onClose }: Props) {
       if (e.key === 'Escape') onClose();
     };
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prevOverflow;
+    };
   }, [onClose]);
 
   if (questions.length === 0) return null;
@@ -33,13 +39,17 @@ export function QuizModal({ questions, lessonTitle, onClose }: Props) {
     setPicked(null);
   };
 
-  return (
+  const ui = (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+      className="fixed inset-0 flex items-center justify-center p-4"
+      style={{ zIndex: 1000, backgroundColor: 'rgba(0, 0, 0, 0.85)' }}
       onClick={onClose}
+      role="dialog"
+      aria-modal="true"
     >
       <div
-        className="w-full max-w-md rounded-xl border border-border bg-panel p-6 shadow-2xl"
+        className="w-full max-w-md rounded-xl border border-border p-6 shadow-2xl"
+        style={{ backgroundColor: '#1a1a1a' }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-1">
@@ -57,16 +67,25 @@ export function QuizModal({ questions, lessonTitle, onClose }: Props) {
             const isCorrect = i === q.correct;
             const isPicked = picked === i;
             let cls = 'border-border text-fg hover:border-fg';
+            let inline: React.CSSProperties = { backgroundColor: '#0f0f0f' };
             if (answered) {
-              if (isCorrect) cls = 'border-accent bg-accent/10 text-accent';
-              else if (isPicked) cls = 'border-red-500/60 bg-red-500/10 text-red-300';
-              else cls = 'border-border text-muted';
+              if (isCorrect) {
+                cls = 'border-accent text-accent';
+                inline = { backgroundColor: 'rgba(20, 184, 166, 0.12)' };
+              } else if (isPicked) {
+                cls = 'border-red-500/60 text-red-300';
+                inline = { backgroundColor: 'rgba(239, 68, 68, 0.12)' };
+              } else {
+                cls = 'border-border text-muted';
+                inline = { backgroundColor: '#0f0f0f' };
+              }
             }
             return (
               <button
                 key={i}
                 disabled={answered}
                 onClick={() => setPicked(i)}
+                style={inline}
                 className={
                   'text-left px-4 py-2.5 rounded-md border text-sm transition-colors ' + cls
                 }
@@ -81,11 +100,13 @@ export function QuizModal({ questions, lessonTitle, onClose }: Props) {
         {answered && (
           <div
             className={
-              'rounded-md border px-3 py-2 mb-4 text-xs leading-relaxed ' +
-              (picked === q.correct
-                ? 'border-accent/40 bg-accent/10 text-fg'
-                : 'border-amber-400/30 bg-amber-400/5 text-fg')
+              'rounded-md border px-3 py-2 mb-4 text-xs leading-relaxed text-fg ' +
+              (picked === q.correct ? 'border-accent/40' : 'border-amber-400/30')
             }
+            style={{
+              backgroundColor:
+                picked === q.correct ? 'rgba(20, 184, 166, 0.1)' : 'rgba(251, 191, 36, 0.08)',
+            }}
           >
             <span className="font-medium">
               {picked === q.correct ? 'Correct.' : 'Not quite.'}
@@ -95,10 +116,7 @@ export function QuizModal({ questions, lessonTitle, onClose }: Props) {
         )}
 
         <div className="flex justify-between items-center">
-          <button
-            onClick={onClose}
-            className="text-xs text-muted hover:text-fg"
-          >
+          <button onClick={onClose} className="text-xs text-muted hover:text-fg">
             Skip checkpoint
           </button>
           <button
@@ -108,8 +126,9 @@ export function QuizModal({ questions, lessonTitle, onClose }: Props) {
               'px-4 py-1.5 rounded-md text-sm font-medium ' +
               (answered
                 ? 'bg-accent hover:bg-accent-hover text-white'
-                : 'bg-panel border border-border text-muted cursor-not-allowed')
+                : 'border border-border text-muted cursor-not-allowed')
             }
+            style={!answered ? { backgroundColor: '#0f0f0f' } : undefined}
           >
             {isLast ? 'Done' : 'Next →'}
           </button>
@@ -117,4 +136,6 @@ export function QuizModal({ questions, lessonTitle, onClose }: Props) {
       </div>
     </div>
   );
+
+  return createPortal(ui, document.body);
 }
