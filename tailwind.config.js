@@ -5,13 +5,13 @@ export default {
   theme: {
     extend: {
       colors: {
-        bg: '#0a0a0a',
-        panel: '#121212',
-        border: '#1f1f1f',
-        fg: '#ededed',
-        muted: '#8a8a8a',
-        accent: '#14b8a6',
-        'accent-hover': '#0d9488',
+        bg: 'rgb(var(--color-bg) / <alpha-value>)',
+        panel: 'rgb(var(--color-panel) / <alpha-value>)',
+        border: 'rgb(var(--color-border) / <alpha-value>)',
+        fg: 'rgb(var(--color-fg) / <alpha-value>)',
+        muted: 'rgb(var(--color-muted) / <alpha-value>)',
+        accent: 'rgb(var(--color-accent) / <alpha-value>)',
+        'accent-hover': 'rgb(var(--color-accent-hover) / <alpha-value>)',
       },
       fontFamily: {
         sans: [

@@ -1,13 +1,22 @@
 import { useState } from 'react';
-import type { AppState } from '../lib/types';
+import type { AppState, Theme } from '../lib/types';
 import { exportNotesAsMarkdown } from '../lib/storage';
 import { todayKey } from '../lib/session';
 
+const THEMES: { value: Theme; label: string }[] = [
+  { value: 'dark', label: 'Dark' },
+  { value: 'light', label: 'Light' },
+];
+
 export function SettingsView({
   state,
+  theme,
+  onThemeChange,
   onReset,
 }: {
   state: AppState;
+  theme: Theme;
+  onThemeChange: (t: Theme) => void;
   onReset: () => void;
 }) {
   const [confirming, setConfirming] = useState(false);
@@ -37,6 +46,30 @@ export function SettingsView({
   return (
     <div className="max-w-2xl mx-auto px-6 pt-12 pb-24">
       <h1 className="text-2xl font-semibold mb-6">Settings</h1>
+
+      <section className="rounded-xl border border-border bg-panel p-6 mb-4">
+        <h2 className="text-sm font-medium mb-2">Theme</h2>
+        <p className="text-xs text-muted mb-4">
+          Dark is the default. Your preference is remembered on this device.
+        </p>
+        <div className="inline-flex gap-1 border border-border rounded-md p-1 bg-bg">
+          {THEMES.map((t) => {
+            const active = theme === t.value;
+            return (
+              <button
+                key={t.value}
+                onClick={() => onThemeChange(t.value)}
+                className={
+                  'px-4 py-1.5 rounded text-sm ' +
+                  (active ? 'bg-panel text-fg' : 'text-muted hover:text-fg')
+                }
+              >
+                {t.label}
+              </button>
+            );
+          })}
+        </div>
+      </section>
 
       <section className="rounded-xl border border-border bg-panel p-6 mb-4">
         <h2 className="text-sm font-medium mb-2">Export notes</h2>

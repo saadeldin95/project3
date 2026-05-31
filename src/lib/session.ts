@@ -25,6 +25,36 @@ export function pickSessionLessons(active: Lesson[], budgetMin: number): Lesson[
   return out;
 }
 
+export type SessionView = {
+  completedToday: Lesson[];
+  pendingPicks: Lesson[];
+  active: Lesson[];
+  usedMin: number;
+  remainingMin: number;
+};
+
+export function computeTodaySession(
+  queue: Lesson[],
+  records: Record<string, LessonRecord>,
+  budgetMin: number,
+  today: string,
+): SessionView {
+  const completedToday: Lesson[] = [];
+  let usedMin = 0;
+  for (const l of queue) {
+    const r = records[l.id];
+    if (!r) continue;
+    if (r.status !== 'done' && r.status !== 'skipped') continue;
+    if (dateKey(r.updatedAt) !== today) continue;
+    completedToday.push(l);
+    if (r.status === 'done') usedMin += l.durationMin;
+  }
+  const remainingMin = Math.max(0, budgetMin - usedMin);
+  const active = activeQueue(queue, records);
+  const pendingPicks = remainingMin > 0 ? pickSessionLessons(active, remainingMin) : [];
+  return { completedToday, pendingPicks, active, usedMin, remainingMin };
+}
+
 export function sessionMinutes(lessons: Lesson[]): number {
   return lessons.reduce((s, l) => s + l.durationMin, 0);
 }
@@ -81,11 +111,5 @@ export function formatDate(iso: string): string {
 
 export function isTodayEnded(state: AppState, today: string): boolean {
   const s = state.session;
-  if (!s || s.date !== today) return false;
-  if (s.endedAt) return true;
-  if (s.lessonIds.length === 0) return false;
-  return s.lessonIds.every((id) => {
-    const r = state.records[id];
-    return r?.status === 'done' || r?.status === 'skipped';
-  });
+  return Boolean(s && s.date === today && s.endedAt);
 }

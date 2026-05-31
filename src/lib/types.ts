@@ -28,7 +28,6 @@ export type BudgetMin = 30 | 60 | 120 | 180 | 240;
 
 export type SessionLock = {
   date: string;
-  lessonIds: string[];
   endedAt?: string;
 };
 
@@ -40,3 +39,5 @@ export type AppState = {
 };
 
 export type ViewKey = 'today' | 'history' | 'notes' | 'progress' | 'settings';
+
+export type Theme = 'dark' | 'light';

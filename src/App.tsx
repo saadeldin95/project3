@@ -7,17 +7,16 @@ import { ProgressView } from './views/ProgressView';
 import { SettingsView } from './views/SettingsView';
 import {
   clearSession,
-  dropFromSession,
   endSession as endSessionInState,
   loadState,
-  lockSession,
   resetAll,
   saveState,
   setBudget,
   setRecord,
 } from './lib/storage';
 import { todayKey } from './lib/session';
-import type { AppState, BudgetMin, ViewKey } from './lib/types';
+import { applyTheme, loadTheme, saveTheme } from './lib/theme';
+import type { AppState, BudgetMin, Theme, ViewKey } from './lib/types';
 
 function useToday(): string {
   const [today, setToday] = useState<string>(() => todayKey());
@@ -41,12 +40,18 @@ function useToday(): string {
 
 export default function App() {
   const [state, setState] = useState<AppState>(() => loadState());
+  const [theme, setThemeState] = useState<Theme>(() => loadTheme());
   const [view, setView] = useState<ViewKey>('today');
   const today = useToday();
 
   useEffect(() => {
     saveState(state);
   }, [state]);
+
+  useEffect(() => {
+    applyTheme(theme);
+    saveTheme(theme);
+  }, [theme]);
 
   const onComplete = useCallback((id: string, note: string | undefined) => {
     setState((s) =>
@@ -69,29 +74,21 @@ export default function App() {
   }, []);
 
   const onPostpone = useCallback((id: string) => {
-    setState((s) => {
-      const updated = setRecord(s, id, {
+    setState((s) =>
+      setRecord(s, id, {
         status: 'postponed',
         updatedAt: new Date().toISOString(),
         note: s.records[id]?.note,
-      });
-      return dropFromSession(updated, id);
-    });
+      }),
+    );
   }, []);
 
   const onBudgetChange = useCallback((b: BudgetMin) => {
     setState((s) => setBudget(s, b));
   }, []);
 
-  const onLockSession = useCallback((date: string, ids: string[]) => {
-    setState((s) => {
-      if (s.session?.date === date) return s;
-      return lockSession(s, date, ids);
-    });
-  }, []);
-
   const onEndSession = useCallback(() => {
-    setState((s) => endSessionInState(s));
+    setState((s) => endSessionInState(s, todayKey()));
   }, []);
 
   const onStartNext = useCallback(() => {
@@ -100,6 +97,10 @@ export default function App() {
 
   const onReset = useCallback(() => {
     setState(resetAll());
+  }, []);
+
+  const onThemeChange = useCallback((t: Theme) => {
+    setThemeState(t);
   }, []);
 
   return (
@@ -115,7 +116,6 @@ export default function App() {
               onSkip,
               onPostpone,
               onBudgetChange,
-              onLockSession,
               onEndSession,
               onStartNext,
             }}
@@ -124,7 +124,14 @@ export default function App() {
         {view === 'history' && <HistoryView state={state} today={today} />}
         {view === 'notes' && <NotesView state={state} />}
         {view === 'progress' && <ProgressView state={state} />}
-        {view === 'settings' && <SettingsView state={state} onReset={onReset} />}
+        {view === 'settings' && (
+          <SettingsView
+            state={state}
+            theme={theme}
+            onThemeChange={onThemeChange}
+            onReset={onReset}
+          />
+        )}
       </main>
     </div>
   );

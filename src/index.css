@@ -2,6 +2,29 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  /* Light theme defaults */
+  --color-bg: 255 255 255;
+  --color-panel: 246 246 246;
+  --color-border: 228 228 228;
+  --color-fg: 17 17 17;
+  --color-muted: 107 107 107;
+  --color-accent: 13 148 136;
+  --color-accent-hover: 15 118 110;
+  color-scheme: light;
+}
+
+:root.dark {
+  --color-bg: 10 10 10;
+  --color-panel: 18 18 18;
+  --color-border: 31 31 31;
+  --color-fg: 237 237 237;
+  --color-muted: 138 138 138;
+  --color-accent: 20 184 166;
+  --color-accent-hover: 13 148 136;
+  color-scheme: dark;
+}
+
 html,
 body,
 #root {

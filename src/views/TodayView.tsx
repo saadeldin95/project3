@@ -1,12 +1,10 @@
-import { useLayoutEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 import type { AppState, BudgetMin, Lesson } from '../lib/types';
-import { LESSON_BY_ID, LESSON_QUEUE } from '../data/lessons';
+import { LESSON_QUEUE } from '../data/lessons';
 import {
-  activeQueue,
+  computeTodaySession,
   formatMinutes,
   isTodayEnded,
-  pickSessionLessons,
-  sessionMinutes,
   todayDateLabel,
 } from '../lib/session';
 import { LessonCard } from '../components/LessonCard';
@@ -26,7 +24,6 @@ type Actions = {
   onSkip: (id: string) => void;
   onPostpone: (id: string) => void;
   onBudgetChange: (b: BudgetMin) => void;
-  onLockSession: (date: string, ids: string[]) => void;
   onEndSession: () => void;
   onStartNext: () => void;
 };
@@ -40,57 +37,29 @@ export function TodayView({
   today: string;
   actions: Actions;
 }) {
-  const activeForToday = useMemo(
-    () => activeQueue(LESSON_QUEUE, state.records),
-    [state.records],
+  const session = useMemo(
+    () => computeTodaySession(LESSON_QUEUE, state.records, state.budgetMin, today),
+    [state.records, state.budgetMin, today],
   );
-
-  const hasSessionForToday = state.session?.date === today;
-  const ended = isTodayEnded(state, today);
-
-  const { onLockSession } = actions;
-  // Lock in a session for today if none exists yet AND something fits the budget.
-  useLayoutEffect(() => {
-    if (hasSessionForToday) return;
-    if (activeForToday.length === 0) {
-      onLockSession(today, []);
-      return;
-    }
-    const picked = pickSessionLessons(activeForToday, state.budgetMin);
-    if (picked.length > 0) {
-      onLockSession(today, picked.map((l) => l.id));
-    }
-    // else: leave session null, the oversize message will render below
-  }, [hasSessionForToday, today, state.budgetMin, activeForToday, onLockSession]);
-
-  const sessionLessons: Lesson[] = useMemo(() => {
-    if (!hasSessionForToday) return [];
-    return state.session!.lessonIds
-      .map((id) => LESSON_BY_ID[id])
-      .filter((l): l is Lesson => Boolean(l));
-  }, [hasSessionForToday, state.session]);
+  const manuallyEnded = isTodayEnded(state, today);
+  const sessionLessons = [...session.completedToday, ...session.pendingPicks];
+  const totalSessionMin = session.usedMin + session.pendingPicks.reduce((s, l) => s + l.durationMin, 0);
 
   return (
     <div className="max-w-2xl mx-auto px-6 pt-12 pb-24">
       <div className="mb-6 text-xs text-muted uppercase tracking-widest">{todayDateLabel()}</div>
 
-      <BudgetPicker
-        budget={state.budgetMin}
-        onChange={actions.onBudgetChange}
-        hint={
-          hasSessionForToday && sessionLessons.length > 0
-            ? "Locked for today. Changing this only affects tomorrow's session."
-            : undefined
-        }
-      />
+      <BudgetPicker budget={state.budgetMin} onChange={actions.onBudgetChange} />
 
       <TodayBody
         state={state}
         today={today}
-        ended={ended}
-        activeForToday={activeForToday}
+        manuallyEnded={manuallyEnded}
         sessionLessons={sessionLessons}
-        hasSessionForToday={hasSessionForToday}
+        pendingPicks={session.pendingPicks}
+        completedToday={session.completedToday}
+        active={session.active}
+        totalSessionMin={totalSessionMin}
         actions={actions}
       />
     </div>
@@ -100,11 +69,9 @@ export function TodayView({
 function BudgetPicker({
   budget,
   onChange,
-  hint,
 }: {
   budget: BudgetMin;
   onChange: (b: BudgetMin) => void;
-  hint?: string;
 }) {
   return (
     <div className="mb-6">
@@ -128,7 +95,6 @@ function BudgetPicker({
           );
         })}
       </div>
-      {hint && <p className="mt-2 text-[11px] text-muted italic">{hint}</p>}
     </div>
   );
 }
@@ -136,55 +102,57 @@ function BudgetPicker({
 function TodayBody({
   state,
   today,
-  ended,
-  activeForToday,
+  manuallyEnded,
   sessionLessons,
-  hasSessionForToday,
+  pendingPicks,
+  completedToday,
+  active,
+  totalSessionMin,
   actions,
 }: {
   state: AppState;
   today: string;
-  ended: boolean;
-  activeForToday: Lesson[];
+  manuallyEnded: boolean;
   sessionLessons: Lesson[];
-  hasSessionForToday: boolean;
+  pendingPicks: Lesson[];
+  completedToday: Lesson[];
+  active: Lesson[];
+  totalSessionMin: number;
   actions: Actions;
 }) {
-  if (ended) {
-    const doneToday = sessionLessons.filter((l) => {
-      const r = state.records[l.id];
-      return r?.status === 'done' || r?.status === 'skipped';
-    }).length;
-    const hasMore = activeForToday.length > 0;
+  const hasMoreInQueue = active.length > 0;
+
+  if (manuallyEnded) {
     return (
       <SessionCompleteState
-        completedCount={doneToday}
-        canStartNext={hasMore}
+        completedCount={completedToday.length}
+        canStartNext={hasMoreInQueue}
         onStartNext={actions.onStartNext}
       />
     );
   }
 
-  if (activeForToday.length === 0) {
+  if (active.length === 0 && completedToday.length === 0) {
     return <QueueClearState />;
   }
 
-  if (!hasSessionForToday || sessionLessons.length === 0) {
-    const next = activeForToday[0];
-    return <OversizeState lesson={next} budgetMin={state.budgetMin} />;
+  // Nothing done today and next lesson alone exceeds the budget.
+  if (pendingPicks.length === 0 && completedToday.length === 0) {
+    return <OversizeState lesson={active[0]} budgetMin={state.budgetMin} />;
   }
 
-  const totalMins = sessionMinutes(sessionLessons);
+  const budgetFilled = pendingPicks.length === 0 && hasMoreInQueue;
+  const allDone = !hasMoreInQueue && pendingPicks.length === 0;
 
   return (
     <>
       <div className="text-sm text-muted">
         Today's session:{' '}
-        <span className="text-fg">{formatMinutes(totalMins)}</span> across{' '}
+        <span className="text-fg">{formatMinutes(totalSessionMin)}</span> across{' '}
         <span className="text-fg">{sessionLessons.length}</span> lesson
         {sessionLessons.length === 1 ? '' : 's'}
         <span className="text-border mx-2">·</span>
-        <span>{activeForToday.length} left in the queue</span>
+        <span>{active.length} left in the queue</span>
       </div>
 
       <div className="flex flex-col gap-4 mt-6">
@@ -200,22 +168,65 @@ function TodayBody({
         ))}
       </div>
 
-      <div className="mt-8 flex justify-center">
-        <button
-          onClick={() => {
-            if (confirm("End today's session? You can come back tomorrow.")) {
-              actions.onEndSession();
-            }
-          }}
-          className="px-5 py-2.5 rounded-lg border border-border text-sm text-muted hover:text-fg hover:border-fg"
-        >
-          End today's session
-        </button>
-      </div>
+      <BottomBar
+        allDone={allDone}
+        budgetFilled={budgetFilled}
+        onEndSession={actions.onEndSession}
+        onStartNext={actions.onStartNext}
+      />
       <p className="mt-3 text-center text-[11px] text-muted">
         {today /* re-render anchor: dynamic date */}
       </p>
     </>
+  );
+}
+
+function BottomBar({
+  allDone,
+  budgetFilled,
+  onEndSession,
+  onStartNext,
+}: {
+  allDone: boolean;
+  budgetFilled: boolean;
+  onEndSession: () => void;
+  onStartNext: () => void;
+}) {
+  if (allDone) {
+    return (
+      <div className="mt-8 rounded-lg border border-border bg-panel px-5 py-4 text-center text-sm text-muted">
+        🎉 Full curriculum done. Rest easy.
+      </div>
+    );
+  }
+  if (budgetFilled) {
+    return (
+      <div className="mt-8 rounded-lg border border-border bg-panel px-5 py-4 flex flex-wrap items-center justify-between gap-3">
+        <span className="text-sm text-muted">
+          <span className="text-accent">✓</span> Session complete — see you tomorrow.
+        </span>
+        <button
+          onClick={onStartNext}
+          className="px-3 py-1.5 rounded-md border border-border text-xs text-muted hover:text-accent hover:border-accent"
+        >
+          Start tomorrow's session early →
+        </button>
+      </div>
+    );
+  }
+  return (
+    <div className="mt-8 flex justify-center">
+      <button
+        onClick={() => {
+          if (confirm("End today's session? You can come back tomorrow.")) {
+            onEndSession();
+          }
+        }}
+        className="px-5 py-2.5 rounded-lg border border-border text-sm text-muted hover:text-fg hover:border-fg"
+      >
+        End today's session
+      </button>
+    </div>
   );
 }
 
