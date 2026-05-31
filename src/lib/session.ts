@@ -25,34 +25,43 @@ export function pickSessionLessons(active: Lesson[], budgetMin: number): Lesson[
   return out;
 }
 
-export type SessionView = {
-  completedToday: Lesson[];
-  pendingPicks: Lesson[];
-  active: Lesson[];
-  usedMin: number;
-  remainingMin: number;
-};
-
-export function computeTodaySession(
+export function pendingLessons(
   queue: Lesson[],
   records: Record<string, LessonRecord>,
-  budgetMin: number,
-  today: string,
-): SessionView {
-  const completedToday: Lesson[] = [];
-  let usedMin = 0;
-  for (const l of queue) {
+): Lesson[] {
+  return queue.filter((l) => {
     const r = records[l.id];
-    if (!r) continue;
-    if (r.status !== 'done' && r.status !== 'skipped') continue;
-    if (dateKey(r.updatedAt) !== today) continue;
-    completedToday.push(l);
-    if (r.status === 'done') usedMin += l.durationMin;
-  }
-  const remainingMin = Math.max(0, budgetMin - usedMin);
-  const active = activeQueue(queue, records);
-  const pendingPicks = remainingMin > 0 ? pickSessionLessons(active, remainingMin) : [];
-  return { completedToday, pendingPicks, active, usedMin, remainingMin };
+    return !r || r.status === 'pending';
+  });
+}
+
+// Compute the lesson-id list for a session under a given budget.
+// Pins lessons already done/skipped (those minutes are spent and can't be
+// undone), then picks new pending lessons (postponed lessons are deliberately
+// excluded so postpone never gets reversed by a budget change).
+export function recomputeSessionLessonIds(
+  queue: Lesson[],
+  records: Record<string, LessonRecord>,
+  currentLessonIds: string[],
+  budgetMin: number,
+): string[] {
+  const byId = new Map(queue.map((l) => [l.id, l] as const));
+  const pinned = currentLessonIds.filter((id) => {
+    const r = records[id];
+    return r?.status === 'done' || r?.status === 'skipped';
+  });
+  const pinnedMin = pinned.reduce(
+    (sum, id) => sum + (byId.get(id)?.durationMin ?? 0),
+    0,
+  );
+  const remaining = Math.max(0, budgetMin - pinnedMin);
+  const candidates = queue.filter((l) => {
+    if (pinned.includes(l.id)) return false;
+    const r = records[l.id];
+    return !r || r.status === 'pending';
+  });
+  const picks = pickSessionLessons(candidates, remaining);
+  return [...pinned, ...picks.map((l) => l.id)];
 }
 
 export function sessionMinutes(lessons: Lesson[]): number {
@@ -111,5 +120,11 @@ export function formatDate(iso: string): string {
 
 export function isTodayEnded(state: AppState, today: string): boolean {
   const s = state.session;
-  return Boolean(s && s.date === today && s.endedAt);
+  if (!s || s.date !== today) return false;
+  if (s.endedAt) return true;
+  if (s.lessonIds.length === 0) return true;
+  return s.lessonIds.every((id) => {
+    const r = state.records[id];
+    return r?.status === 'done' || r?.status === 'skipped';
+  });
 }

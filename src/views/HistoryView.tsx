@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import type { AppState, LessonRecord, LessonStatus } from '../lib/types';
 import { LESSON_BY_ID } from '../data/lessons';
-import { dateKey, formatDayHeader, isTodayEnded } from '../lib/session';
+import { dateKey, formatDayHeader } from '../lib/session';
 
 type Entry = { id: string; record: LessonRecord };
 type DayGroup = {
@@ -26,11 +26,9 @@ const STATUS_COLOR: Record<LessonStatus, string> = {
   postponed: 'text-amber-400',
 };
 
-export function HistoryView({ state, today }: { state: AppState; today: string }) {
+export function HistoryView({ state }: { state: AppState; today: string }) {
   const [query, setQuery] = useState('');
   const [openDay, setOpenDay] = useState<string | null>(null);
-
-  const todayEnded = isTodayEnded(state, today);
 
   const groups: DayGroup[] = useMemo(() => {
     const byDay = new Map<string, Entry[]>();
@@ -38,7 +36,6 @@ export function HistoryView({ state, today }: { state: AppState; today: string }
       if (record.status === 'pending') continue;
       if (!LESSON_BY_ID[id]) continue;
       const dk = dateKey(record.updatedAt);
-      if (dk === today && !todayEnded) continue;
       const arr = byDay.get(dk) ?? [];
       arr.push({ id, record });
       byDay.set(dk, arr);
@@ -58,7 +55,7 @@ export function HistoryView({ state, today }: { state: AppState; today: string }
     }
     out.sort((a, b) => (b.date > a.date ? 1 : -1));
     return out;
-  }, [state.records, today, todayEnded]);
+  }, [state.records]);
 
   const q = query.trim().toLowerCase();
   const filtered = q

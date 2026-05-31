@@ -28,6 +28,7 @@ export type BudgetMin = 30 | 60 | 120 | 180 | 240;
 
 export type SessionLock = {
   date: string;
+  lessonIds: string[];
   endedAt?: string;
 };
 

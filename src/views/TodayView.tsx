@@ -1,10 +1,12 @@
-import { useMemo } from 'react';
+import { useLayoutEffect, useMemo } from 'react';
 import type { AppState, BudgetMin, Lesson } from '../lib/types';
-import { LESSON_QUEUE } from '../data/lessons';
+import { LESSON_BY_ID, LESSON_QUEUE } from '../data/lessons';
 import {
-  computeTodaySession,
   formatMinutes,
   isTodayEnded,
+  pendingLessons,
+  pickSessionLessons,
+  sessionMinutes,
   todayDateLabel,
 } from '../lib/session';
 import { LessonCard } from '../components/LessonCard';
@@ -24,6 +26,7 @@ type Actions = {
   onSkip: (id: string) => void;
   onPostpone: (id: string) => void;
   onBudgetChange: (b: BudgetMin) => void;
+  onLockSession: (date: string, ids: string[]) => void;
   onEndSession: () => void;
   onStartNext: () => void;
 };
@@ -37,13 +40,38 @@ export function TodayView({
   today: string;
   actions: Actions;
 }) {
-  const session = useMemo(
-    () => computeTodaySession(LESSON_QUEUE, state.records, state.budgetMin, today),
-    [state.records, state.budgetMin, today],
+  const hasSessionForToday = state.session?.date === today;
+  const pending = useMemo(
+    () => pendingLessons(LESSON_QUEUE, state.records),
+    [state.records],
   );
-  const manuallyEnded = isTodayEnded(state, today);
-  const sessionLessons = [...session.completedToday, ...session.pendingPicks];
-  const totalSessionMin = session.usedMin + session.pendingPicks.reduce((s, l) => s + l.durationMin, 0);
+
+  // Bootstrap a locked session for today on a fresh day. Picks lessons that
+  // fit the current budget; saves an empty list when the curriculum is done,
+  // and leaves session=null when the next lesson alone exceeds the budget
+  // (so the BudgetPicker can re-trigger this effect when the user bumps it).
+  const { onLockSession } = actions;
+  useLayoutEffect(() => {
+    if (hasSessionForToday) return;
+    if (pending.length === 0) {
+      onLockSession(today, []);
+      return;
+    }
+    const picks = pickSessionLessons(pending, state.budgetMin);
+    if (picks.length > 0) {
+      onLockSession(today, picks.map((l) => l.id));
+    }
+  }, [hasSessionForToday, today, state.budgetMin, pending, onLockSession]);
+
+  const sessionLessons: Lesson[] = useMemo(() => {
+    if (!hasSessionForToday) return [];
+    return state.session!.lessonIds
+      .map((id) => LESSON_BY_ID[id])
+      .filter((l): l is Lesson => Boolean(l));
+  }, [hasSessionForToday, state.session]);
+
+  const manuallyEnded = Boolean(state.session?.date === today && state.session?.endedAt);
+  const ended = isTodayEnded(state, today);
 
   return (
     <div className="max-w-2xl mx-auto px-6 pt-12 pb-24">
@@ -54,12 +82,11 @@ export function TodayView({
       <TodayBody
         state={state}
         today={today}
+        ended={ended}
         manuallyEnded={manuallyEnded}
+        pendingCount={pending.length}
         sessionLessons={sessionLessons}
-        pendingPicks={session.pendingPicks}
-        completedToday={session.completedToday}
-        active={session.active}
-        totalSessionMin={totalSessionMin}
+        hasSessionForToday={hasSessionForToday}
         actions={actions}
       />
     </div>
@@ -102,57 +129,60 @@ function BudgetPicker({
 function TodayBody({
   state,
   today,
+  ended,
   manuallyEnded,
+  pendingCount,
   sessionLessons,
-  pendingPicks,
-  completedToday,
-  active,
-  totalSessionMin,
+  hasSessionForToday,
   actions,
 }: {
   state: AppState;
   today: string;
+  ended: boolean;
   manuallyEnded: boolean;
+  pendingCount: number;
   sessionLessons: Lesson[];
-  pendingPicks: Lesson[];
-  completedToday: Lesson[];
-  active: Lesson[];
-  totalSessionMin: number;
+  hasSessionForToday: boolean;
   actions: Actions;
 }) {
-  const hasMoreInQueue = active.length > 0;
+  // Bootstrap is still running OR the next lesson exceeds the budget:
+  if (!hasSessionForToday) {
+    if (pendingCount === 0) return <QueueClearState />;
+    return <OversizeState lesson={firstPending(state)} budgetMin={state.budgetMin} />;
+  }
 
-  if (manuallyEnded) {
+  // The whole curriculum is finished:
+  if (state.session!.lessonIds.length === 0 && pendingCount === 0) {
+    return <QueueClearState />;
+  }
+
+  if (ended) {
+    const doneCount = sessionLessons.filter((l) => {
+      const r = state.records[l.id];
+      return r?.status === 'done' || r?.status === 'skipped';
+    }).length;
+    const hasMore = pendingCount > 0;
     return (
       <SessionCompleteState
-        completedCount={completedToday.length}
-        canStartNext={hasMoreInQueue}
+        completedCount={doneCount}
+        canStartNext={hasMore}
+        manuallyEnded={manuallyEnded}
         onStartNext={actions.onStartNext}
       />
     );
   }
 
-  if (active.length === 0 && completedToday.length === 0) {
-    return <QueueClearState />;
-  }
-
-  // Nothing done today and next lesson alone exceeds the budget.
-  if (pendingPicks.length === 0 && completedToday.length === 0) {
-    return <OversizeState lesson={active[0]} budgetMin={state.budgetMin} />;
-  }
-
-  const budgetFilled = pendingPicks.length === 0 && hasMoreInQueue;
-  const allDone = !hasMoreInQueue && pendingPicks.length === 0;
+  const totalMins = sessionMinutes(sessionLessons);
 
   return (
     <>
       <div className="text-sm text-muted">
         Today's session:{' '}
-        <span className="text-fg">{formatMinutes(totalSessionMin)}</span> across{' '}
+        <span className="text-fg">{formatMinutes(totalMins)}</span> across{' '}
         <span className="text-fg">{sessionLessons.length}</span> lesson
         {sessionLessons.length === 1 ? '' : 's'}
         <span className="text-border mx-2">·</span>
-        <span>{active.length} left in the queue</span>
+        <span>{pendingCount} pending in the queue</span>
       </div>
 
       <div className="flex flex-col gap-4 mt-6">
@@ -168,12 +198,18 @@ function TodayBody({
         ))}
       </div>
 
-      <BottomBar
-        allDone={allDone}
-        budgetFilled={budgetFilled}
-        onEndSession={actions.onEndSession}
-        onStartNext={actions.onStartNext}
-      />
+      <div className="mt-8 flex justify-center">
+        <button
+          onClick={() => {
+            if (confirm("End today's session? You can come back tomorrow.")) {
+              actions.onEndSession();
+            }
+          }}
+          className="px-5 py-2.5 rounded-lg border border-border text-sm text-muted hover:text-fg hover:border-fg"
+        >
+          End today's session
+        </button>
+      </div>
       <p className="mt-3 text-center text-[11px] text-muted">
         {today /* re-render anchor: dynamic date */}
       </p>
@@ -181,53 +217,12 @@ function TodayBody({
   );
 }
 
-function BottomBar({
-  allDone,
-  budgetFilled,
-  onEndSession,
-  onStartNext,
-}: {
-  allDone: boolean;
-  budgetFilled: boolean;
-  onEndSession: () => void;
-  onStartNext: () => void;
-}) {
-  if (allDone) {
-    return (
-      <div className="mt-8 rounded-lg border border-border bg-panel px-5 py-4 text-center text-sm text-muted">
-        🎉 Full curriculum done. Rest easy.
-      </div>
-    );
+function firstPending(state: AppState): Lesson {
+  for (const l of LESSON_QUEUE) {
+    const r = state.records[l.id];
+    if (!r || r.status === 'pending') return l;
   }
-  if (budgetFilled) {
-    return (
-      <div className="mt-8 rounded-lg border border-border bg-panel px-5 py-4 flex flex-wrap items-center justify-between gap-3">
-        <span className="text-sm text-muted">
-          <span className="text-accent">✓</span> Session complete — see you tomorrow.
-        </span>
-        <button
-          onClick={onStartNext}
-          className="px-3 py-1.5 rounded-md border border-border text-xs text-muted hover:text-accent hover:border-accent"
-        >
-          Start tomorrow's session early →
-        </button>
-      </div>
-    );
-  }
-  return (
-    <div className="mt-8 flex justify-center">
-      <button
-        onClick={() => {
-          if (confirm("End today's session? You can come back tomorrow.")) {
-            onEndSession();
-          }
-        }}
-        className="px-5 py-2.5 rounded-lg border border-border text-sm text-muted hover:text-fg hover:border-fg"
-      >
-        End today's session
-      </button>
-    </div>
-  );
+  return LESSON_QUEUE[0];
 }
 
 function OversizeState({ lesson, budgetMin }: { lesson: Lesson; budgetMin: number }) {
@@ -255,10 +250,12 @@ function OversizeState({ lesson, budgetMin }: { lesson: Lesson; budgetMin: numbe
 function SessionCompleteState({
   completedCount,
   canStartNext,
+  manuallyEnded,
   onStartNext,
 }: {
   completedCount: number;
   canStartNext: boolean;
+  manuallyEnded: boolean;
   onStartNext: () => void;
 }) {
   return (
@@ -268,7 +265,9 @@ function SessionCompleteState({
       <p className="text-sm text-muted">
         {completedCount > 0
           ? `${completedCount} lesson${completedCount === 1 ? '' : 's'} done today. See you tomorrow.`
-          : 'See you tomorrow.'}
+          : manuallyEnded
+            ? 'See you tomorrow.'
+            : 'Everything in today\'s session is wrapped. See you tomorrow.'}
       </p>
       {canStartNext && (
         <button

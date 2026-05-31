@@ -6,15 +6,22 @@ import { NotesView } from './views/NotesView';
 import { ProgressView } from './views/ProgressView';
 import { SettingsView } from './views/SettingsView';
 import {
-  clearSession,
+  dropFromSession,
   endSession as endSessionInState,
   loadState,
+  lockSession,
   resetAll,
   saveState,
   setBudget,
   setRecord,
 } from './lib/storage';
-import { todayKey } from './lib/session';
+import {
+  pendingLessons,
+  pickSessionLessons,
+  recomputeSessionLessonIds,
+  todayKey,
+} from './lib/session';
+import { LESSON_QUEUE } from './data/lessons';
 import { applyTheme, loadTheme, saveTheme } from './lib/theme';
 import type { AppState, BudgetMin, Theme, ViewKey } from './lib/types';
 
@@ -74,25 +81,60 @@ export default function App() {
   }, []);
 
   const onPostpone = useCallback((id: string) => {
-    setState((s) =>
-      setRecord(s, id, {
+    setState((s) => {
+      const updated = setRecord(s, id, {
         status: 'postponed',
         updatedAt: new Date().toISOString(),
         note: s.records[id]?.note,
-      }),
-    );
+      });
+      return dropFromSession(updated, id);
+    });
   }, []);
 
   const onBudgetChange = useCallback((b: BudgetMin) => {
-    setState((s) => setBudget(s, b));
+    setState((s) => {
+      const next = setBudget(s, b);
+      // If today's session is locked, re-pick its lessonIds for the new budget.
+      // Already-touched lessons stay pinned; postponed ones are not pulled back.
+      if (next.session && next.session.date === todayKey()) {
+        const newIds = recomputeSessionLessonIds(
+          LESSON_QUEUE,
+          next.records,
+          next.session.lessonIds,
+          b,
+        );
+        return {
+          ...next,
+          session: { ...next.session, lessonIds: newIds },
+        };
+      }
+      return next;
+    });
+  }, []);
+
+  const onLockSession = useCallback((date: string, ids: string[]) => {
+    setState((s) => {
+      if (s.session?.date === date) return s;
+      return lockSession(s, date, ids);
+    });
   }, []);
 
   const onEndSession = useCallback(() => {
-    setState((s) => endSessionInState(s, todayKey()));
+    setState((s) => endSessionInState(s));
   }, []);
 
   const onStartNext = useCallback(() => {
-    setState((s) => clearSession(s));
+    // Build a brand-new locked session for today from the current pending
+    // queue (excludes postponed lessons), capped at the current budget.
+    setState((s) => {
+      const pending = pendingLessons(LESSON_QUEUE, s.records);
+      const picks = pickSessionLessons(pending, s.budgetMin);
+      if (picks.length === 0 && pending.length > 0) {
+        // Next pending exceeds budget — clear so the oversize state shows.
+        return { ...s, session: null };
+      }
+      return lockSession(s, todayKey(), picks.map((l) => l.id));
+    });
   }, []);
 
   const onReset = useCallback(() => {
@@ -116,6 +158,7 @@ export default function App() {
               onSkip,
               onPostpone,
               onBudgetChange,
+              onLockSession,
               onEndSession,
               onStartNext,
             }}

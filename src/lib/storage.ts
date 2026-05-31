@@ -80,9 +80,10 @@ function normaliseBudget(n: unknown): BudgetMin {
 function normaliseSession(s: unknown): SessionLock | null {
   if (!s || typeof s !== 'object') return null;
   const obj = s as Partial<SessionLock>;
-  if (typeof obj.date !== 'string') return null;
+  if (typeof obj.date !== 'string' || !Array.isArray(obj.lessonIds)) return null;
   return {
     date: obj.date,
+    lessonIds: obj.lessonIds.filter((x): x is string => typeof x === 'string'),
     endedAt: typeof obj.endedAt === 'string' ? obj.endedAt : undefined,
   };
 }
@@ -133,10 +134,31 @@ export function setBudget(state: AppState, budget: BudgetMin): AppState {
   return { ...state, budgetMin: budget };
 }
 
-export function endSession(state: AppState, date: string): AppState {
+export function lockSession(
+  state: AppState,
+  date: string,
+  lessonIds: string[],
+): AppState {
+  return { ...state, session: { date, lessonIds } };
+}
+
+export function dropFromSession(state: AppState, lessonId: string): AppState {
+  if (!state.session) return state;
+  if (!state.session.lessonIds.includes(lessonId)) return state;
   return {
     ...state,
-    session: { date, endedAt: new Date().toISOString() },
+    session: {
+      ...state.session,
+      lessonIds: state.session.lessonIds.filter((id) => id !== lessonId),
+    },
+  };
+}
+
+export function endSession(state: AppState): AppState {
+  if (!state.session) return state;
+  return {
+    ...state,
+    session: { ...state.session, endedAt: new Date().toISOString() },
   };
 }
 
